@@ -1,58 +1,43 @@
-import poplib,sys,email
+import poplib,sys,email,getpass
 
-mimes=["image/jpeg","application/msword"]
+mimes=["image/jpeg","application/msword","application/pdf","application/rtf","application/zip"]
 
 p=poplib.POP3_SSL('pop.gmail.com',995)
-p.user('fmantis77')
-p.pass_('mantis777')
+username=raw_input("Gmail user name : ")
+p.user(username)
+password=getpass.getpass("Password : ")
+p.pass_(password)
 response,listings,cpt=p.list()
+cpt=1
 for listing in listings:
 	number0,size=listing.split()
 	number=int(number0)
 	response,lines,octets=p.top(number,0)
 	message=email.message_from_string('\n'.join(lines))	# message contains core of the message with line breaks
+
+	mailid="mail-"+str(cpt)+".txt"
+	f1=open("output/"+mailid,"w")
+
 	for header in 'From','To','Subject','Date':
 		if header in message:				# find line with header info
-			print header+':'+message[header]	# try with file with n lines
-	print
+			f1.write(header+':'+message[header]+'\n')
+			if header=='Date':
+				print "Fetching : "+message[header]
+
 	response,lines,octets=p.retr(number)			# retrieve core of message(n)
 	message=email.message_from_string('\n'.join(lines))
-	print '-'*72
+	f1.write('-'*72+'\n')
 	for part in message.walk():
-		print 'content type : ',part.get_content_type()
 		if part.get_content_type()== 'text/plain':
-			print part.get_payload()
-			print '-'*72
+			f1.write(part.get_payload())
+			f1.write('\n'+'-'*72+'\n')
 		else:
 			if part.get_content_type() in mimes:
-				name=part.get_filename()
+				name="output/mail-"+str(cpt)+"-"+part.get_filename()
 				data=part.get_payload(decode=True)
 				f=open(name,"wb")
 				f.write(data)
 				f.close()
+	cpt=cpt+1
 	
-#		if part.get_content_type() == 'application/msword':
-#			name = part.get_param('name') or 'MyDoc.doc'
-#			f = open(name, 'wb')
-#			f.write(part.get_payload(None, True)) # You need None as the first param because part.is_multipart() is False
-#        		f.close(
-
-
-#            if part.get_content_type() in allowed_mimetypes:
-#                name = part.get_filename()
-#                data = part.get_payload(decode=True)
-#                f = file(name,'wb')
-#                f.write(data)
-#                f.close()
-
-
-
-#def WriteAttachment(msg):
-#    for part in msg.walk():
-#        if part.get_type() in mimes:
-#            name = part.get_filename()
-#            data = part.get_payload(decode=True)
-#            f = file(name,'wb')
-#            f.write(data)
-#            f.close()
 
